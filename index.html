@@ -54,7 +54,7 @@ function chooseFont(f) {
 }
 /* ========= Parâmetros ========= */
 const p = getParams();
-let msg = p.get("n") || "BEM-VINDO [membername]";
+let msg = p.get("n") || "SUPER BEM-VINDO [membername]";
 let membername = p.get("membername") || "";
 msg = msg.replace("[membername]", membername);
 const textColor = "#" + (p.get("c")||"FFFF00").replace("#","");

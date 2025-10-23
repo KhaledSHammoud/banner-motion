@@ -2,22 +2,19 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Saudação</title>
 <style>
-html {
-  height: 100%;
-  margin: 0;
-  background-color: #FFFFFF; /* Cor sólida para o html, permite que a opacidade do body seja visível */
-}
-body {
+html, body {
   height: 100%;
   margin: 0;
   overflow: hidden;
+  background-color: black;
 }
 #banner {
   position: absolute;
   top: 50%;
+  left: 0;
   transform: translateY(-50%);
   white-space: nowrap;
   font-weight: bold;
@@ -32,15 +29,6 @@ function getParams() {
   const query = document.URL.split("?")[1] || "";
   return new URLSearchParams(query);
 }
-function addAlpha(color, opacity) {
-  let clean = color.replace("#","");
-  if (clean.length === 3) {  // Corrige #000 → #000000
-    clean = clean.split('').map(c => c + c).join('');
-  }
-  const alpha = Math.round(Math.min(Math.max(opacity,0),1)*255)
-    .toString(16).padStart(2,"0").toUpperCase();
-  return "#"+clean+alpha;
-}
 function chooseFont(f) {
   switch(parseInt(f)){
     case 1: return "Serif";
@@ -50,57 +38,101 @@ function chooseFont(f) {
     default: return "Sans-Serif";
   }
 }
+function hexToRgb(hex) {
+  const r = parseInt(hex.substr(1,2),16);
+  const g = parseInt(hex.substr(3,2),16);
+  const b = parseInt(hex.substr(5,2),16);
+  return {r,g,b};
+}
+function getBrightness(hex) {
+  const {r,g,b} = hexToRgb(hex);
+  return (r*299 + g*587 + b*114) / 1000;
+}
 /* ========= Parâmetros ========= */
 const p = getParams();
-let msg = p.get("n") || "BEM-VINDO [membername]";
+let msg = p.get("n") || p.get("text") || "BEM-VINDO [membername]";
 let membername = p.get("membername") || "";
 msg = msg.replace("[membername]", membername);
-const textColor = "#" + (p.get("c")||"FFFF00").replace("#","");
-const bgColor = "#" + (p.get("b")||"000000").replace("#","");
-const opacity = parseFloat(p.get("o"))||0;
+const textColor = "#" + (p.get("c") || p.get("color") || "FFFF00").replace("#","");
+const bgColor = "#" + (p.get("b") || p.get("bgcolor") || "000000").replace("#","");
+const opacity = parseFloat(p.get("o") || p.get("opacity")) || 0; // ✅ FUNDO
+const decoColorHex = "#" + (p.get("d") || p.get("deco") || textColor).replace("#",""); // ➕ NOVO
+const decoOpacity = parseFloat(p.get("do") || 0) || 0; // ➕ NOVO
 const fontType = p.get("f")||0;
-const fontSize = parseInt(p.get("s"))||50;
-const duration = parseFloat(p.get("w"))||10;
+const fontSize = parseInt(p.get("s") || p.get("size").replace("px","")) || 50;
+const duration = parseFloat(p.get("w") || p.get("speed")) || 10;
 const dir = (p.get("dir")||"left").toLowerCase();
 const behavior = (p.get("behavior")||"scroll").toLowerCase();
+const bgstyle = p.get("bgstyle") || "none";
+
 /* ========= Elementos ========= */
 const banner = document.getElementById("banner");
 banner.textContent = msg;
 banner.style.color = textColor;
 banner.style.fontFamily = chooseFont(fontType);
 banner.style.fontSize = fontSize+"px";
-document.body.style.backgroundColor = addAlpha(bgColor,opacity);
+document.body.style.backgroundColor = bgColor;
+
+/* ========= 🔥 DECORAÇÕES - CORRIGIDO ========= */
+function rgbaFromHex(hex, op) {
+  const {r,g,b} = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${op})`;
+}
+
+if (bgstyle !== "none") {
+  const bgBrightness = getBrightness(bgColor);
+  const autoOpacity = bgBrightness < 100 ? 0.6 : 0.2;
+  const decoOp = decoOpacity || autoOpacity; // ✅ FIX: SÓ &do= ou auto!
+  const decoColor = rgbaFromHex(decoColorHex, decoOp); // ➕ USA &d= ou cor texto
+  
+  switch (bgstyle) {
+    case "stripes":
+      document.body.style.backgroundImage = 
+        `repeating-linear-gradient(45deg, ${decoColor} 0px, ${decoColor} 10px, transparent 10px, transparent 20px)`;
+      break;
+    case "dots":
+      document.body.style.backgroundImage = 
+        `radial-gradient(circle, ${decoColor} 2px, transparent 2px)`;
+      document.body.style.backgroundSize = "20px 20px";
+      break;
+    case "grid":
+      document.body.style.backgroundImage = 
+        `linear-gradient(to right, ${decoColor} 1px, transparent 1px),
+         linear-gradient(to bottom, ${decoColor} 1px, transparent 1px)`;
+      document.body.style.backgroundSize = "25px 25px";
+      break;
+  }
+  document.body.style.backgroundRepeat = "repeat";
+}
+
 /* ========= Movimento ========= */
 let vw = window.innerWidth;
-let bw = banner.offsetWidth;
-let posX = dir==="right"? -bw : vw;
+let bw = 0;
+let posX = 0;
 let lastTime = null;
 let reverse = false;
-let speed = (vw + bw)/duration;
+let speed = 0;
 function recalc(){
   vw = window.innerWidth;
   bw = banner.offsetWidth;
   speed = (vw + bw)/duration;
   if(behavior==="slide" && !reverse){
-    if(dir==="left") posX = vw;
-    else posX = -bw;
+    posX = (dir==="left") ? vw : -bw;
+  } else {
+    posX = (dir==="right") ? -bw : vw;
   }
 }
 function animate(ts){
   if(!lastTime) lastTime=ts;
   const dt = (ts - lastTime)/1000;
   lastTime = ts;
-  let delta = speed*dt*(reverse?-1:1);
-  if(dir==="left") posX -= delta;
-  else posX += delta;
+  const delta = speed*dt*(reverse?-1:1);
+  posX += (dir==="left" ? -delta : delta);
   if(behavior==="scroll"){
     if(dir==="left" && posX<-bw) posX=vw;
     if(dir==="right" && posX>vw) posX=-bw;
   } else if(behavior==="alternate"){
-    if(dir==="left" && posX<-bw) reverse=!reverse;
-    if(dir==="left" && posX>vw) reverse=!reverse;
-    if(dir==="right" && posX>vw) reverse=!reverse;
-    if(dir==="right" && posX<-bw) reverse=!reverse;
+    if(posX<-bw || posX>vw) reverse=!reverse;
   } else if(behavior==="slide"){
     if(dir==="left" && posX<-bw) posX=-bw;
     if(dir==="right" && posX>vw) posX=vw;
@@ -109,8 +141,10 @@ function animate(ts){
   requestAnimationFrame(animate);
 }
 window.addEventListener("resize", recalc);
-recalc();
-requestAnimationFrame(animate);
+window.addEventListener("load", () => {
+  recalc();
+  requestAnimationFrame(animate);
+});
 </script>
 </body>
 </html>

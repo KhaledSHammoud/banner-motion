@@ -23,25 +23,13 @@ body {
   font-weight: bold;
   user-select: none;
 }
-#debug {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  color: red;
-  font-size: 14px;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 10px;
-  z-index: 999;
-}
 </style>
 </head>
 <body>
 <div id="banner">CARREGANDO...</div>
-<div id="debug">Carregando parâmetros...</div>
 <script>
 function getParams() {
   const query = window.location.search || "";
-  console.log("Query String:", query);
   return new URLSearchParams(query);
 }
 function addAlpha(color, opacity) {
@@ -80,19 +68,6 @@ const fontSize = parseInt(p.get("s")) || 50;
 const duration = parseFloat(p.get("w")) || 10;
 const dir = (p.get("dir") || "left").toLowerCase();
 const behavior = (p.get("behavior") || "scroll").toLowerCase();
-
-// Exibir parâmetros na tela para depuração
-const debugDiv = document.getElementById("debug");
-debugDiv.textContent = `Parâmetros: bgColor=${bgColor}, opacity=${opacity}, result=${addAlpha(bgColor, opacity)}`;
-
-// Log no console para depuração
-console.log("Parâmetros:", {
-  bgColor: bgColor,
-  opacity: opacity,
-  result: addAlpha(bgColor, opacity),
-  queryString: window.location.search
-});
-
 /* ========= Elementos ========= */
 const banner = document.getElementById("banner");
 banner.textContent = msg;

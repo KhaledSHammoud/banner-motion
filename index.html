@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -9,10 +8,9 @@
 html {
   height: 100%;
   margin: 0;
-  background-color: #FFFFFF; /* Cor sólida para o html, permite que a opacidade do body seja visível */
+  background-color: #FFFFFF; /* Cor sólida para o html */
 }
 body {
-  <h1 style="color:red; position:fixed; top:10px; left:10px; z-index:999;">VERSÃO ATUALIZADA - TESTE</h1>
   height: 100%;
   margin: 0;
   overflow: hidden;
@@ -25,13 +23,25 @@ body {
   font-weight: bold;
   user-select: none;
 }
+#debug {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  color: red;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 10px;
+  z-index: 999;
+}
 </style>
 </head>
 <body>
 <div id="banner">CARREGANDO...</div>
+<div id="debug">Carregando parâmetros...</div>
 <script>
 function getParams() {
-  const query = document.URL.split("?")[1] || "";
+  const query = window.location.search || "";
+  console.log("Query String:", query); // Log da query string bruta
   return new URLSearchParams(query);
 }
 function addAlpha(color, opacity) {
@@ -39,9 +49,11 @@ function addAlpha(color, opacity) {
   if (clean.length === 3) {  // Corrige #000 → #000000
     clean = clean.split('').map(c => c + c).join('');
   }
-  const alpha = Math.round(Math.min(Math.max(opacity,0),1)*255)
-    .toString(16).padStart(2,"0").toUpperCase();
-  return "#"+clean+alpha;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  const alpha = Math.min(Math.max(opacity, 0), 1);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 function chooseFont(f) {
   switch(parseInt(f)){
@@ -54,60 +66,73 @@ function chooseFont(f) {
 }
 /* ========= Parâmetros ========= */
 const p = getParams();
-let msg = p.get("n") || "SUPER BEM-VINDO [membername]";
+let msg = p.get("n") || "BEM-VINDO [membername]";
 let membername = p.get("membername") || "";
 msg = msg.replace("[membername]", membername);
 const textColor = "#" + (p.get("c")||"FFFF00").replace("#","");
 const bgColor = "#" + (p.get("b")||"000000").replace("#","");
-const opacity = parseFloat(p.get("o"))||0;
-const fontType = p.get("f")||0;
-const fontSize = parseInt(p.get("s"))||50;
-const duration = parseFloat(p.get("w"))||10;
-const dir = (p.get("dir")||"left").toLowerCase();
-const behavior = (p.get("behavior")||"scroll").toLowerCase();
+const opacity = parseFloat(p.get("o")) || 0.5; // Valor padrão alterado para 0.5
+const fontType = p.get("f") || 0;
+const fontSize = parseInt(p.get("s")) || 50;
+const duration = parseFloat(p.get("w")) || 10;
+const dir = (p.get("dir") || "left").toLowerCase();
+const behavior = (p.get("behavior") || "scroll").toLowerCase();
+
+// Exibir parâmetros na tela para depuração
+const debugDiv = document.getElementById("debug");
+debugDiv.textContent = `Parâmetros: bgColor=${bgColor}, opacity=${opacity}, result=${addAlpha(bgColor, opacity)}`;
+
+// Log no console para depuração
+console.log("Parâmetros:", {
+  bgColor: bgColor,
+  opacity: opacity,
+  result: addAlpha(bgColor, opacity),
+  queryString: window.location.search
+});
+
 /* ========= Elementos ========= */
 const banner = document.getElementById("banner");
 banner.textContent = msg;
 banner.style.color = textColor;
 banner.style.fontFamily = chooseFont(fontType);
-banner.style.fontSize = fontSize+"px";
-document.body.style.backgroundColor = addAlpha(bgColor,opacity);
+banner.style.fontSize = fontSize + "px";
+document.body.style.backgroundColor = addAlpha(bgColor, opacity);
 /* ========= Movimento ========= */
 let vw = window.innerWidth;
 let bw = banner.offsetWidth;
-let posX = dir==="right"? -bw : vw;
+let posX = dir === "right" ? -bw : vw;
 let lastTime = null;
 let reverse = false;
-let speed = (vw + bw)/duration;
-function recalc(){
+let speed = (vw + bw) / duration;
+function recalc() {
   vw = window.innerWidth;
   bw = banner.offsetWidth;
-  speed = (vw + bw)/duration;
-  if(behavior==="slide" && !reverse){
-    if(dir==="left") posX = vw;
+  speed = (vw + bw) / duration;
+  if (behavior === "slide" && !reverse) {
+    if (dir === "left") posX = vw;
     else posX = -bw;
   }
 }
-function animate(ts){
-  if(!lastTime) lastTime=ts;
-  const dt = (ts - lastTime)/1000;
+function animate(ts) {
+  if (!lastTime) lastTime = ts;
+  const dt = (ts - lastTime) / 1000;
   lastTime = ts;
-  let delta = speed*dt*(reverse?-1:1);
-  if(dir==="left") posX -= delta;
+  let delta = speed * dt * (reverse ? -1 : 1);
+  if (dir === "left") posX -= delta;
   else posX += delta;
-  if(behavior==="scroll"){
-    if(dir==="left" && posX<-bw) posX=vw;
-    if(dir==="right" && posX>vw) posX=-bw;
-  } else if(behavior==="alternate"){
-    if(dir==="left" && posX<-bw) reverse=!reverse;
-    if(dir==="left" && posX>vw) reverse=!reverse;
-    if(dir==="right" && posX>vw) reverse=!reverse;
-    if(dir==="right" && posX<-bw) reverse=!reverse;
-  } else if(behavior==="slide"){
-    if(dir==="left" && posX<-bw) posX=-bw;
-    if(dir==="right" && posX>vw) posX=vw;
+  if (behavior === "scroll") {
+    if (dir === "left" && posX < -bw) posX = vw;
+    if (dir === "right" && posX > vw) posX = -bw;
+  } else if (behavior === "alternate") {
+    if (dir === "left" && posX < -bw) reverse = !reverse;
+    if (dir === "left" && posX > vw) reverse = !reverse;
+    if (dir === "right" && posX > vw) reverse = !reverse;
+    if (dir === "right" && posX < -bw) reverse = !reverse;
+  } else if (behavior === "slide") {
+    if (dir === "left" && posX < -bw) posX = -bw;
+    if (dir === "right" && posX > vw) posX = vw;
   }
-  banner.style.left = posX+"px";
+  banner.style.left = posX + "px";
   requestAnimationFrame(animate);
 }
 window.addEventListener("resize", recalc);

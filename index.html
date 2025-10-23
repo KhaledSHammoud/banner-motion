@@ -8,7 +8,7 @@
 html {
   height: 100%;
   margin: 0;
-  background-color: #FFFFFF; /* Cor sólida para o html */
+  background-color: transparent; /* Fundo do html transparente para permitir transparência total */
 }
 body {
   height: 100%;
@@ -41,10 +41,13 @@ body {
 <script>
 function getParams() {
   const query = window.location.search || "";
-  console.log("Query String:", query); // Log da query string bruta
+  console.log("Query String:", query);
   return new URLSearchParams(query);
 }
 function addAlpha(color, opacity) {
+  if (opacity === 0) {
+    return "transparent"; // Retorna transparent para opacidade 0
+  }
   let clean = color.replace("#","");
   if (clean.length === 3) {  // Corrige #000 → #000000
     clean = clean.split('').map(c => c + c).join('');
@@ -71,7 +74,7 @@ let membername = p.get("membername") || "";
 msg = msg.replace("[membername]", membername);
 const textColor = "#" + (p.get("c")||"FFFF00").replace("#","");
 const bgColor = "#" + (p.get("b")||"000000").replace("#","");
-const opacity = parseFloat(p.get("o")) || 0.5; // Valor padrão alterado para 0.5
+const opacity = parseFloat(p.get("o")) || 0; // Valor padrão 0
 const fontType = p.get("f") || 0;
 const fontSize = parseInt(p.get("s")) || 50;
 const duration = parseFloat(p.get("w")) || 10;
